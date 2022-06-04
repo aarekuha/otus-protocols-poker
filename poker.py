@@ -114,30 +114,50 @@ def flush(hand: list[str]) -> bool:
     return most_common_count >= 5
 
 
-def straight(ranks: list[str]) -> bool:
+def straight(sorted_ranks: list[str]) -> bool:
     """
         Возвращает True, если отсортированные ранги формируют последовательность 5ти,
             где у 5ти карт ранги идут по порядку (стрит)
-        >>> straight("T 7 ? ? ? J ?".split())
+        >>> straight("A K Q J T".split())
         True
-        >>> straight("T 7 2 6 ? J ?".split())
+        >>> straight("A Q J T 9 8 2".split())
         True
-        >>> straight("J 7 2 6 ? J ?".split())
-        False
-        >>> straight("K 7 A 6 ? J ?".split())
+        >>> straight("? A Q J T 2 3".split())
         True
-        >>> straight("K 7 A 6 3 J ?".split())
+        >>> straight("? ? Q J T 8 7".split())
+        True
+        >>> straight("? ? Q J 7 2 2".split())
         False
     """
     return False
 
 
-def kind(n: int, sorted_ranks: list[str]) -> int | None:
-    """Возвращает первый ранг, который n раз встречается в данной руке.
-    Возвращает None, если ничего не найдено"""
-    groupped_ranks: collections.Counter = collections.Counter(rank for rank in sorted_ranks)
-    for a,b in groupped_ranks:
-        print(a, b)
+def kind(n: int, sorted_ranks: list[str]) -> str | None:
+    """
+        Возвращает первый ранг, который n раз встречается в данной руке.
+        Возвращает None, если ничего не найдено
+        >>> kind(2, "A A K Q J T 9 8".split())
+        'A'
+        >>> kind(2, "A K Q J J T 9 8".split())
+        'J'
+        >>> kind(2, "A K Q J T 9 8 7".split()) is None
+        True
+        >>> kind(2, "? ? K Q J T 9 8".split())
+        '?'
+        >>> kind(2, "? K Q J T 9 8 2".split())
+        'K'
+        >>> kind(3, "? K Q J T T 8 2".split())
+        'T'
+        >>> kind(4, "? K Q J T 2 2 2".split())
+        '2'
+    """
+    ranks_counter: collections.Counter = collections.Counter(rank for rank in sorted_ranks)
+    jokers_count: int = sorted_ranks.count('?')
+    for rank in ranks_counter:
+        hit_pure: bool = (ranks_counter[rank] == n)
+        hit_with_jokers: bool = (ranks_counter[rank] + jokers_count >= n) and (rank != '?')
+        if hit_pure or hit_with_jokers:
+            return rank
 
     return None
 
@@ -197,6 +217,8 @@ def joker_free_hand(sorted_ranks: list[str]) -> list[str]:
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-    kind(3, card_ranks("TC 7C 2C 2S ?R JC ?B".split()))
+    # ranks = card_ranks("TC 7C 2C 2S ?R JC ?B".split())
+    # print(ranks)
+    # print(kind(2, ranks))
     # test_best_hand()
     # test_best_wild_hand()
