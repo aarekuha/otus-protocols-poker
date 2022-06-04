@@ -32,7 +32,8 @@ import collections
 SUIT: int = 1  # Индекс масти
 RANK: int = 0  # Индекс ранга(веса) карты
 JOKER_RANK: str = '?'
-
+STRAIGHT_CARDS_COUNT: int = 5
+# Веса карт по рангу
 WEIGHTS: dict = {
     '2': 2,
     '3': 3,
@@ -115,21 +116,88 @@ def flush(hand: list[str]) -> bool:
     return most_common_count >= 5
 
 
+def series_ranks_count(joker_free_sorted_ranks: list[str], series_count: int = 1) -> int:
+    """
+        Возвращает максимальное количество рангов, идущих по-порядку
+        series_count: счетчик последовательности, используется в рекурсии
+        >>> series_ranks_count("A K Q J T 2 2".split())
+        5
+        >>> series_ranks_count("A K Q J T 9 2".split())
+        6
+        >>> series_ranks_count("A A Q 3 3 3 2".split())
+        2
+        >>> series_ranks_count("A K Q Q Q 2 2".split())
+        3
+    """
+    if not joker_free_sorted_ranks:
+        return 0
+    current_series_count: int = 1
+    previous_rank_weight: int = WEIGHTS[joker_free_sorted_ranks[0]]
+    for rank in joker_free_sorted_ranks[1:]:
+        current_rank_weight: int = WEIGHTS[rank]
+        if current_rank_weight + 1 == previous_rank_weight:
+            previous_rank_weight = current_rank_weight
+            current_series_count += 1
+            series_count = max(current_series_count, series_count)
+            continue
+        else:
+            series_count = max(series_ranks_count(joker_free_sorted_ranks[1:], series_count), series_count)
+
+    return series_count
+
+
 def straight(sorted_ranks: list[str]) -> bool:
     """
         Возвращает True, если отсортированные ранги формируют последовательность 5ти,
             где у 5ти карт ранги идут по порядку (стрит)
-        >>> straight("A K Q J T".split())
+        >>> straight("A K Q J T 2 2".split())
         True
         >>> straight("A Q J T 9 8 2".split())
         True
         >>> straight("? A Q J T 2 3".split())
         True
-        >>> straight("? ? Q J T 8 7".split())
+        >>> straight("? ? Q J T 6 6".split())
         True
+        >>> straight("? ? A K 4 3 2".split())
+        True
+        >>> straight("? ? A Q T 3 2".split())
+        True
+        >>> straight("? ? A A 4 3 2".split())
+        True
+        >>> straight("A Q J 7 5 2 2".split())
+        False
         >>> straight("? ? Q J 7 2 2".split())
         False
     """
+    joker_free_ranks: list[str] = get_joker_free_ranks(sorted_ranks)
+    total_jokers_count: int = sorted_ranks.count(JOKER_RANK)
+    if series_ranks_count(joker_free_ranks) >= STRAIGHT_CARDS_COUNT - total_jokers_count:
+        return True
+    last_sensible_index: int = 3  # крайний индекс карты, с которого имеет смысл проверять
+    for first_rank_index in range(last_sensible_index):
+        successful_quantity: int = 1  # Счетчик количества карт идущих друг за другом
+        jokers_left: int = total_jokers_count
+        previous_rank_weight: int = WEIGHTS[joker_free_ranks[first_rank_index]]
+        for rank in joker_free_ranks[first_rank_index + 1:]:
+            current_rank_weight: int = WEIGHTS[rank]
+            expected_rank_weight: int = current_rank_weight + 1
+            if  expected_rank_weight == previous_rank_weight:
+                # Карта идет по-порядку
+                previous_rank_weight = current_rank_weight
+            elif expected_rank_weight + jokers_left >= previous_rank_weight:
+                # Подмена имеющимися джокерами
+                used_jokers: int = previous_rank_weight - expected_rank_weight
+                previous_rank_weight = current_rank_weight
+                jokers_left -= used_jokers
+                successful_quantity += used_jokers  # За джокера
+            else:
+                # Проверять дальше нет смысла
+                break
+
+            successful_quantity += 1
+            if successful_quantity == STRAIGHT_CARDS_COUNT:
+                return True
+    # В предложенном списке не было прямой последовательности
     return False
 
 
@@ -239,12 +307,12 @@ def test_best_wild_hand():
     print('OK')
 
 
-def joker_free_hand(sorted_ranks: list[str]) -> list[str]:
+def get_joker_free_ranks(sorted_ranks: list[str]) -> list[str]:
     """
         Возвращает "руку" без джокеров
-        >>> joker_free_hand(card_ranks("TC 7C 2C 2S ?R JC ?B".split()))
+        >>> get_joker_free_ranks(card_ranks("TC 7C 2C 2S ?R JC ?B".split()))
         ['J', 'T', '7', '2', '2']
-        >>> joker_free_hand(card_ranks("TC 7C 2C 2S 2H JC 2B".split()))
+        >>> get_joker_free_ranks(card_ranks("TC 7C 2C 2S 2H JC 2B".split()))
         ['J', 'T', '7', '2', '2', '2', '2']
     """
     return list(itertools.dropwhile(lambda rank: rank == JOKER_RANK, sorted_ranks))
