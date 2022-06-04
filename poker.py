@@ -31,6 +31,7 @@ import collections
 
 SUIT: int = 1  # Индекс масти
 RANK: int = 0  # Индекс ранга(веса) карты
+JOKER_RANK: str = '?'
 
 WEIGHTS: dict = {
     '2': 2,
@@ -152,20 +153,54 @@ def kind(n: int, sorted_ranks: list[str]) -> str | None:
         '2'
     """
     ranks_counter: collections.Counter = collections.Counter(rank for rank in sorted_ranks)
-    jokers_count: int = sorted_ranks.count('?')
+    jokers_count: int = sorted_ranks.count(JOKER_RANK)
     for rank in ranks_counter:
         hit_pure: bool = (ranks_counter[rank] == n)
-        hit_with_jokers: bool = (ranks_counter[rank] + jokers_count >= n) and (rank != '?')
+        hit_with_jokers: bool = (ranks_counter[rank] + jokers_count >= n) and (rank != JOKER_RANK)
         if hit_pure or hit_with_jokers:
             return rank
 
     return None
 
 
-def two_pair(ranks):
-    """Если есть две пары, то возврщает два соответствующих ранга,
-    иначе возвращает None"""
-    return
+def two_pair(sorted_ranks: list[str]) -> list[str] | None:
+    """
+        Если есть две пары, то возврщает два соответствующих ранга,
+            иначе возвращает None
+        >>> two_pair("A A K Q J T 9 9".split())
+        ['A', '9']
+        >>> two_pair("A K K Q J T 9 9".split())
+        ['K', '9']
+        >>> two_pair("A K K Q J T 9 9".split())
+        ['K', '9']
+        >>> two_pair("A K K Q J J 9 9".split())
+        ['K', 'J']
+        >>> two_pair("? K K Q J T 9 8".split())
+        ['K', 'Q']
+        >>> two_pair("? ? K J T 9 8 2".split())
+        ['K', 'J']
+        >>> two_pair("K Q J T 9 8 7 6".split()) is None
+        True
+        >>> two_pair("? Q J T 9 8 7 6".split()) is None
+        True
+    """
+    ranks_counter: collections.Counter = collections.Counter(rank for rank in sorted_ranks)
+    jokers_count: int = sorted_ranks.count(JOKER_RANK)
+    # Дополнить количество джокерами
+    for rank, count in ranks_counter.items():
+        if rank == JOKER_RANK:
+            continue
+        if not jokers_count:
+            break
+        if count == 1:
+            ranks_counter[rank] = 2
+            jokers_count -= 1
+    pair_ranks: dict = {rank: count for rank, count in ranks_counter.items() if count > 1 and rank != JOKER_RANK}
+    if len(pair_ranks) > 1:
+        # Элементов может быть больше 2, вернуть только первые два
+        return [rank for rank in itertools.islice(pair_ranks, 2)]
+
+    return None
 
 
 def best_hand(hand):
@@ -212,13 +247,10 @@ def joker_free_hand(sorted_ranks: list[str]) -> list[str]:
         >>> joker_free_hand(card_ranks("TC 7C 2C 2S 2H JC 2B".split()))
         ['J', 'T', '7', '2', '2', '2', '2']
     """
-    return list(itertools.dropwhile(lambda rank: rank == '?', sorted_ranks))
+    return list(itertools.dropwhile(lambda rank: rank == JOKER_RANK, sorted_ranks))
 
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-    # ranks = card_ranks("TC 7C 2C 2S ?R JC ?B".split())
-    # print(ranks)
-    # print(kind(2, ranks))
     # test_best_hand()
     # test_best_wild_hand()
