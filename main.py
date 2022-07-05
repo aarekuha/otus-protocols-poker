@@ -52,7 +52,7 @@ WEIGHTS: dict = {
 }
 
 
-def hand_rank(hand):
+def hand_rank(hand: list[str]):
     """Возвращает значение определяющее ранг 'руки'"""
     ranks = card_ranks(hand)
     if straight(ranks) and flush(hand):
@@ -271,9 +271,9 @@ def two_pair(sorted_ranks: list[str]) -> list[str] | None:
     return None
 
 
-def best_hand(hand):
+def best_hand(hand: list[str]) -> list[str]:
     """Из "руки" в 7 карт возвращает лучшую "руку" в 5 карт """
-    return
+    return hand_rank(hand)
 
 
 def best_wild_hand(hand):
