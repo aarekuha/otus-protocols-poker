@@ -309,7 +309,7 @@ def test_best_wild_hand():
 
 def get_joker_free_ranks(sorted_ranks: list[str]) -> list[str]:
     """
-        Возвращает "руку" без джокеров
+        Возвращает "руку" без джокеров. Джокеры размещаются сначала списка.
         >>> get_joker_free_ranks(card_ranks("TC 7C 2C 2S ?R JC ?B".split()))
         ['J', 'T', '7', '2', '2']
         >>> get_joker_free_ranks(card_ranks("TC 7C 2C 2S 2H JC 2B".split()))
